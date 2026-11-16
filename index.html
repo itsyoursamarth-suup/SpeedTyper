@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SpeedTyper - Minimal Dark Mode Typing Test</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #64748b;
+      --text-dim: #475569;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --correct: #22c55e;
+      --correct-bg: rgba(34, 197, 94, 0.15);
+      --wrong: #ef4444;
+      --wrong-bg: rgba(239, 68, 68, 0.2);
+      --caret-color: #38bdf8;
+      --shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      overflow-x: hidden;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.75rem;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      color: var(--text-main);
+    }
+
+    .brand svg {
+      color: var(--accent);
+      width: 28px;
+      height: 28px;
+    }
+
+    .best-score-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 0.4rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .best-score-badge svg {
+      width: 16px;
+      height: 16px;
+      fill: var(--accent);
+    }
+
+    /* Config / Mode Selectors */
+    .controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      background-color: var(--card-bg);
+      padding: 0.75rem 1.25rem;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .control-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-right: 0.25rem;
+    }
+
+    .pill-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .pill-btn:hover {
+      color: var(--text-main);
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .pill-btn.active {
+      color: var(--accent);
+      background-color: rgba(56, 189, 248, 0.12);
+    }
+
+    /* Stats Dashboard */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+
+    .stat-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .stat-card .label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .stat-card .value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-main);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .stat-card.timer-card .value {
+      color: var(--accent);
+    }
+
+    /* Typing Box Area */
+    .typing-wrapper {
+      position: relative;
+      background-color: var(--card-bg);
+      border: 1.5px solid var(--card-border);
+      border-radius: 16px;
+      padding: 2rem;
+      min-height: 180px;
+      cursor: text;
+      box-shadow: var(--shadow);
+      transition: border-color 0.2s ease;
+    }
+
+    .typing-wrapper.focused {
+      border-color: rgba(56, 189, 248, 0.5);
+    }
+
+    .hidden-input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+      left: -9999px;
+    }
+
+    .text-display {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.35rem;
+      line-height: 1.8;
+      word-break: break-word;
+      color: var(--text-dim);
+      position: relative;
+      letter-spacing: 0.02em;
+    }
+
+    /* Letter States */
+    .char {
+      position: relative;
+      transition: color 0.1s ease, background-color 0.1s ease;
+      border-radius: 2px;
+    }
+
+    .char.pending {
+      color: var(--text-dim);
+    }
+
+    .char.correct {
+      color: var(--correct);
+    }
+
+    .char.wrong {
+      color: var(--wrong);
+      background-color: var(--wrong-bg);
+      text-decoration: underline;
+    }
+
+    /* Caret */
+    .char.caret::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: 12%;
+      top: 12%;
+      width: 2.5px;
+      background-color: var(--caret-color);
+      border-radius: 2px;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .focus-notice {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      color: var(--text-main);
+      font-size: 1rem;
+      font-weight: 500;
+      gap: 0.5rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .typing-wrapper:not(.focused) .focus-notice {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Action buttons & Footer */
+    .actions-bar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .btn-restart {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 0.75rem 1.5rem;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-restart:hover {
+      background-color: var(--card-border);
+      color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .btn-restart svg {
+      width: 18px;
+      height: 18px;
+      transition: transform 0.3s ease;
+    }
+
+    .btn-restart:hover svg {
+      transform: rotate(180deg);
+    }
+
+    .shortcut-hint {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .shortcut-hint kbd {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 4px;
+      padding: 0.15rem 0.4rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-main);
+    }
+
+    /* End Result Modal / Overlay */
+    .result-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      padding: 1rem;
+    }
+
+    .result-modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .result-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 480px;
+      text-align: center;
+      box-shadow: var(--shadow);
+      transform: scale(0.9);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .result-modal-overlay.active .result-card {
+      transform: scale(1);
+    }
+
+    .result-card h2 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .result-card p.subtitle {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .new-best-banner {
+      display: none;
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(56, 189, 248, 0.2));
+      border: 1px solid var(--correct);
+      color: var(--correct);
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .result-item {
+      background-color: rgba(15, 23, 42, 0.5);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1rem;
+    }
+
+    .result-item .num {
+      font-size: 2.25rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--accent);
+    }
+
+    .result-item .lbl {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+      margin-top: 0.25rem;
+    }
+
+    .result-details {
+      display: flex;
+      justify-content: space-around;
+      padding: 0.75rem;
+      background-color: rgba(15, 23, 42, 0.3);
+      border-radius: 10px;
+      margin-bottom: 1.75rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .result-details span strong {
+      color: var(--text-main);
+    }
+
+    .btn-primary {
+      background-color: var(--accent);
+      color: #0f172a;
+      border: none;
+      width: 100%;
+      padding: 0.85rem;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary:hover {
+      background-color: #7dd3fc;
+      transform: translateY(-1px);
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      body {
+        padding: 1rem;
+      }
+      .controls-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .control-group {
+        justify-content: space-between;
+      }
+      .text-display {
+        font-size: 1.15rem;
+      }
+      .stat-card .value {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header>
+      <div class="brand">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+        <span>SpeedTyper</span>
+      </div>
+      <div class="best-score-badge" title="Saved in localStorage">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+        <span>Best WPM: <strong id="best-wpm-display">0</strong></span>
+      </div>
+    </header>
+
+    <!-- Controls Bar -->
+    <div class="controls-bar">
+      <div class="control-group">
+        <span class="control-label">Time:</span>
+        <button class="pill-btn active" data-time="30">30s</button>
+        <button class="pill-btn" data-time="60">60s</button>
+      </div>
+      <div class="control-group">
+        <span class="control-label">Text Mode:</span>
+        <button class="pill-btn active" data-mode="quotes">Sentences</button>
+        <button class="pill-btn" data-mode="code">Code Quotes</button>
+        <button class="pill-btn" data-mode="mix">Mixed</button>
+      </div>
+    </div>
+
+    <!-- Real-time Stats Header -->
+    <div class="stats-bar">
+      <div class="stat-card timer-card">
+        <span class="label">Time Remaining</span>
+        <span class="value" id="timer-display">30s</span>
+      </div>
+      <div class="stat-card">
+        <span class="label">WPM</span>
+        <span class="value" id="live-wpm">0</span>
+      </div>
+      <div class="stat-card">
+        <span class="label">Accuracy</span>
+        <span class="value" id="live-acc">100%</span>
+      </div>
+    </div>
+
+    <!-- Typing Box -->
+    <div class="typing-wrapper" id="typing-wrapper">
+      <input type="text" class="hidden-input" id="hidden-input" autocomplete="off" capitalize="off" spellcheck="false" autofocus />
+      <div class="text-display" id="text-display"></div>
+      <div class="focus-notice" id="focus-notice">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        Click here or press any key to focus & start typing
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="actions-bar">
+      <button class="btn-restart" id="btn-restart">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        Restart
+      </button>
+    </div>
+
+    <div class="shortcut-hint">
+      Press <kbd>Esc</kbd> or <kbd>Tab</kbd> + <kbd>Enter</kbd> to quickly restart
+    </div>
+  </div>
+
+  <!-- End Results Modal Overlay -->
+  <div class="result-modal-overlay" id="result-modal">
+    <div class="result-card">
+      <div class="new-best-banner" id="new-best-banner">🎉 NEW HIGH SCORE!</div>
+      <h2>Test Completed!</h2>
+      <p class="subtitle">Here is how you performed:</p>
+
+      <div class="result-grid">
+        <div class="result-item">
+          <div class="num" id="res-wpm">0</div>
+          <div class="lbl">Words / Min</div>
+        </div>
+        <div class="result-item">
+          <div class="num" id="res-acc">0%</div>
+          <div class="lbl">Accuracy</div>
+        </div>
+      </div>
+
+      <div class="result-details">
+        <span>Correct Characters: <strong id="res-correct">0</strong></span>
+        <span>Errors: <strong id="res-errors">0</strong></span>
+        <span>Time: <strong id="res-time">30s</strong></span>
+      </div>
+
+      <button class="btn-primary" id="btn-modal-restart">Try Again</button>
+    </div>
+  </div>
+
+  <script>
+    // --- Quotes Repository ---
+    const SENTENCES = [
+      "The quick brown fox jumps over the lazy dog in a vibrant meadow under the golden sunset.",
+      "Success is not final, failure is not fatal: it is the courage to continue that counts.",
+      "The only limit to our realization of tomorrow will be our doubts of today.",
+      "In the middle of every difficulty lies a hidden opportunity waiting to be discovered.",
+      "Simplicity is the soul of efficiency and the foundation of great design.",
+      "Consistency and persistent effort pave the pathway toward mastering any complex skill.",
+      "Curiosity is the engine of achievement and the spark that kindles lifelong learning.",
+      "Small daily improvements over time lead to stunning results that transform your journey.",
+      "Creativity is intelligence having fun, turning abstract ideas into practical solutions.",
+      "Focus on being productive instead of busy, prioritizing depth over noise.",
+      "Clear thinking requires courage rather than intelligence, so keep your mind open.",
+      "Every great developer you admire once started by solving basic syntax errors."
+    ];
+
+    const CODE_QUOTES = [
+      "const code = () => clean ? performant : refactor; // Write code for humans first.",
+      "First, solve the problem. Then, write the code.",
+      "Simplicity is prerequisite for reliability.",
+      "Talk is cheap. Show me the code.",
+      "Programs must be written for people to read, and only incidentally for machines to execute.",
+      "Any fool can write code that a computer can understand. Good programmers write code for humans.",
+      "Truth can only be found in one place: the code.",
+      "Code is like humor. When you have to explain it, it is bad.",
+      "Fix the cause, not the symptom.",
+      "Clean code always looks like it was written by someone who cares.",
+      "function optimize(mind) { return continuousLearning.apply(practice); }"
+    ];
+
+    // --- DOM Elements ---
+    const textDisplay = document.getElementById('text-display');
+    const hiddenInput = document.getElementById('hidden-input');
+    const typingWrapper = document.getElementById('typing-wrapper');
+    const timerDisplay = document.getElementById('timer-display');
+    const liveWpmDisplay = document.getElementById('live-wpm');
+    const liveAccDisplay = document.getElementById('live-acc');
+    const bestWpmDisplay = document.getElementById('best-wpm-display');
+    const btnRestart = document.getElementById('btn-restart');
+    const resultModal = document.getElementById('result-modal');
+    const btnModalRestart = document.getElementById('btn-modal-restart');
+    const newBestBanner = document.getElementById('new-best-banner');
+
+    const resWpm = document.getElementById('res-wpm');
+    const resAcc = document.getElementById('res-acc');
+    const resCorrect = document.getElementById('res-correct');
+    const resErrors = document.getElementById('res-errors');
+    const resTime = document.getElementById('res-time');
+
+    const timePills = document.querySelectorAll('[data-time]');
+    const modePills = document.querySelectorAll('[data-mode]');
+
+    // --- State Variables ---
+    let timeLimit = 30;
+    let timeLeft = 30;
+    let textMode = 'quotes'; // 'quotes', 'code', 'mix'
+    let timerInterval = null;
+    let isTestRunning = false;
+    let isFinished = false;
+
+    let currentText = '';
+    let charIndex = 0;
+    let mistakes = 0;
+    let totalTypedKeystrokes = 0;
+    let correctCharsCount = 0;
+
+    let bestWPM = parseInt(localStorage.getItem('speedtyper_best_wpm')) || 0;
+
+    // --- Initialization ---
+    function init() {
+      bestWpmDisplay.textContent = bestWPM;
+      setupEventListeners();
+      resetTest();
+    }
+
+    // --- Event Listeners ---
+    function setupEventListeners() {
+      // Focus hidden input on clicking typing wrapper
+      typingWrapper.addEventListener('click', () => {
+        if (!isFinished) hiddenInput.focus();
+      });
+
+      hiddenInput.addEventListener('focus', () => {
+        typingWrapper.classList.add('focused');
+      });
+
+      hiddenInput.addEventListener('blur', () => {
+        typingWrapper.classList.remove('focused');
+      });
+
+      // Global keydown helper to focus input when pressing any key, or press Esc to restart
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          if (resultModal.classList.contains('active')) {
+            resultModal.classList.remove('active');
+          }
+          resetTest();
+          return;
+        }
+        if (resultModal.classList.contains('active')) return;
+        if (e.key === 'Tab') return; // Allow normal tab navigation
+        if (document.activeElement !== hiddenInput && e.key.length === 1) {
+          hiddenInput.focus();
+        }
+      });
+
+      // Handle typing logic
+      hiddenInput.addEventListener('input', handleTyping);
+
+      // Handle time pill switches
+      timePills.forEach(pill => {
+        pill.addEventListener('click', () => {
+          if (isTestRunning) resetTest();
+          timePills.forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          timeLimit = parseInt(pill.getAttribute('data-time'));
+          timeLeft = timeLimit;
+          timerDisplay.textContent = `${timeLeft}s`;
+          resetTest();
+        });
+      });
+
+      // Handle text mode switches
+      modePills.forEach(pill => {
+        pill.addEventListener('click', () => {
+          modePills.forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          textMode = pill.getAttribute('data-mode');
+          resetTest();
+        });
+      });
+
+      // Restart buttons
+      btnRestart.addEventListener('click', resetTest);
+      btnModalRestart.addEventListener('click', () => {
+        resultModal.classList.remove('active');
+        resetTest();
+      });
+    }
+
+    // --- Helper: Get Random Sentence ---
+    function getRandomText() {
+      let pool = [];
+      if (textMode === 'quotes') {
+        pool = SENTENCES;
+      } else if (textMode === 'code') {
+        pool = CODE_QUOTES;
+      } else {
+        pool = [...SENTENCES, ...CODE_QUOTES];
+      }
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    // --- Load Text to Display ---
+    function loadNewPassage(append = false) {
+      const phrase = getRandomText();
+      if (!append) {
+        currentText = phrase;
+        textDisplay.innerHTML = '';
+      } else {
+        currentText += ' ' + phrase;
+      }
+
+      // Render spans for characters
+      const chars = phrase.split('');
+      if (append) {
+        // add space span first
+        const spaceSpan = document.createElement('span');
+        spaceSpan.classList.add('char', 'pending');
+        spaceSpan.innerText = ' ';
+        textDisplay.appendChild(spaceSpan);
+      }
+
+      chars.forEach(ch => {
+        const span = document.createElement('span');
+        span.classList.add('char', 'pending');
+        span.innerText = ch;
+        textDisplay.appendChild(span);
+      });
+
+      updateCaret();
+    }
+
+    // --- Update Caret Position ---
+    function updateCaret() {
+      const charSpans = textDisplay.querySelectorAll('.char');
+      charSpans.forEach(span => span.classList.remove('caret'));
+      if (charIndex < charSpans.length) {
+        charSpans[charIndex].classList.add('caret');
+      } else if (charSpans.length > 0) {
+        // If at end of current passage, append a new quote to keep user typing seamlessly!
+        loadNewPassage(true);
+        const updatedSpans = textDisplay.querySelectorAll('.char');
+        if (updatedSpans[charIndex]) {
+          updatedSpans[charIndex].classList.add('caret');
+        }
+      }
+    }
+
+    // --- Reset Test ---
+    function resetTest() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      isTestRunning = false;
+      isFinished = false;
+
+      timeLeft = timeLimit;
+      charIndex = 0;
+      mistakes = 0;
+      totalTypedKeystrokes = 0;
+      correctCharsCount = 0;
+
+      hiddenInput.value = '';
+      timerDisplay.textContent = `${timeLeft}s`;
+      liveWpmDisplay.textContent = '0';
+      liveAccDisplay.textContent = '100%';
+
+      loadNewPassage(false);
+      hiddenInput.focus();
+    }
+
+    // --- Timer Tick ---
+    function startTimer() {
+      isTestRunning = true;
+      const startTime = Date.now();
+      const initialTimeLimit = timeLimit;
+
+      timerInterval = setInterval(() => {
+        const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+        timeLeft = Math.max(0, initialTimeLimit - elapsedSeconds);
+        timerDisplay.textContent = `${timeLeft}s`;
+
+        calculateRealtimeStats(elapsedSeconds);
+
+        if (timeLeft <= 0) {
+          finishTest();
+        }
+      }, 200);
+    }
+
+    // --- Realtime WPM & Accuracy ---
+    function calculateRealtimeStats(elapsedSec) {
+      if (elapsedSec <= 0) return { wpm: 0, acc: 100 };
+
+      // Standard WPM = (Correct Characters / 5) / (Elapsed Minutes)
+      const minutes = elapsedSec / 60;
+      const wpm = minutes > 0 ? Math.round((correctCharsCount / 5) / minutes) : 0;
+
+      const acc = totalTypedKeystrokes > 0
+        ? Math.max(0, Math.round((correctCharsCount / totalTypedKeystrokes) * 100))
+        : 100;
+
+      liveWpmDisplay.textContent = wpm;
+      liveAccDisplay.textContent = `${acc}%`;
+
+      return { wpm, acc };
+    }
+
+    // --- Handle Typing Input ---
+    function handleTyping(e) {
+      if (isFinished) return;
+
+      // Start timer on first keystroke
+      if (!isTestRunning && hiddenInput.value.length > 0) {
+        startTimer();
+      }
+
+      const spans = textDisplay.querySelectorAll('.char');
+      const inputValue = hiddenInput.value;
+
+      // Handle backspace or deletions
+      if (inputValue.length < charIndex) {
+        while (charIndex > inputValue.length) {
+          charIndex--;
+          const span = spans[charIndex];
+          if (span) {
+            span.classList.remove('correct', 'wrong');
+            span.classList.add('pending');
+          }
+        }
+      } else {
+        // Handle typed characters (supports single or multi-character inputs)
+        while (charIndex < inputValue.length && charIndex < spans.length) {
+          const typedChar = inputValue[charIndex];
+          const targetChar = spans[charIndex].innerText;
+          totalTypedKeystrokes++;
+
+          if (typedChar === targetChar) {
+            spans[charIndex].classList.remove('pending', 'wrong');
+            spans[charIndex].classList.add('correct');
+          } else {
+            spans[charIndex].classList.remove('pending', 'correct');
+            spans[charIndex].classList.add('wrong');
+            mistakes++;
+          }
+          charIndex++;
+        }
+      }
+
+      // Calculate correct characters count
+      correctCharsCount = textDisplay.querySelectorAll('.char.correct').length;
+
+      // Update Caret & Realtime Stats
+      updateCaret();
+
+      const timeElapsed = timeLimit - timeLeft;
+      calculateRealtimeStats(timeElapsed || 1);
+    }
+
+    // --- Finish Test & Show Results ---
+    function finishTest() {
+      clearInterval(timerInterval);
+      isTestRunning = false;
+      isFinished = true;
+
+      hiddenInput.blur();
+
+      const timeElapsed = timeLimit - timeLeft || timeLimit;
+      const stats = calculateRealtimeStats(timeElapsed);
+      const finalWpm = stats.wpm;
+      const finalAcc = stats.acc;
+
+      // Check New High Score
+      let isNewHigh = false;
+      if (finalWpm > bestWPM) {
+        bestWPM = finalWpm;
+        localStorage.setItem('speedtyper_best_wpm', bestWPM);
+        bestWpmDisplay.textContent = bestWPM;
+        isNewHigh = true;
+      }
+
+      // Populate Modal
+      resWpm.textContent = finalWpm;
+      resAcc.textContent = `${finalAcc}%`;
+      resCorrect.textContent = correctCharsCount;
+      resErrors.textContent = mistakes;
+      resTime.textContent = `${timeLimit}s`;
+
+      if (isNewHigh) {
+        newBestBanner.style.display = 'inline-block';
+      } else {
+        newBestBanner.style.display = 'none';
+      }
+
+      // Show Modal with slight delay for smooth transition
+      setTimeout(() => {
+        resultModal.classList.add('active');
+      }, 150);
+    }
+
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
